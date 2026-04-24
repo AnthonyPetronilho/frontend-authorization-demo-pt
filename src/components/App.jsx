@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 import Ducks from "./Ducks";
@@ -6,6 +6,8 @@ import Login from "./Login";
 import MyProfile from "./MyProfile";
 import Register from "./Register";
 import ProtectedRoute from "./ProtectedRoute";
+import { setToken, getToken } from "../utils/token";
+import * as api from "../utils/api";
 import * as auth from "../utils/auth";
 import "./styles/App.css";
 
@@ -35,13 +37,31 @@ function App() {
       return;
     }
 
+    useEffect(() => {
+      const jwt = getToken();
+
+      if (!jwt) {
+        return;
+      }
+
+      api
+        .getUserInfo(jwt)
+        .then(({ username, email }) => {
+          setIsLoggedIn(true);
+          setUserData({ username, email });
+          navigate("/ducks");
+        })
+        .catch(console.error);
+    }, []);
+
     auth
       .authorize(username, password)
       .then((data) => {
         if (data.jwt) {
-          setUserData(data.user); // Salve os dados do usuário no estado
-          setIsLoggedIn(true); // Permita o login do usuário
-          navigate("/ducks"); // Mande o usuário para /ducks
+          setToken(data.jwt);
+          setUserData(data.user);
+          setIsLoggedIn(true);
+          navigate("/ducks");
         }
       })
       .catch(console.error);
